@@ -1,17 +1,36 @@
 package org.example;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
-    static void main() {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        IO.println(String.format("Hello and welcome!"));
-
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            IO.println("i = " + i);
+    public static void main(String[] args) {
+        int serverPort = 5000;
+        String serverAddress = "localhost";
+        String baseDirectory = "./test-files";
+        
+        new java.io.File(baseDirectory).mkdirs();
+        
+        FileServer server = new FileServer(serverPort, baseDirectory);
+        
+        Thread serverThread = new Thread(() -> {
+            try {
+                server.start();
+            } catch (java.io.IOException e) {
+                System.err.println("Server error: " + e.getMessage());
+            }
+        });
+        serverThread.start();
+        
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            System.err.println("Main interrupted");
+        }
+        
+        FileClient client = new FileClient(serverAddress, serverPort);
+        
+        try {
+            client.connect("test.txt");
+        } catch (java.io.IOException e) {
+            System.err.println("Client error: " + e.getMessage());
         }
     }
 }

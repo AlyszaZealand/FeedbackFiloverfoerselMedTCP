@@ -15,40 +15,44 @@ public class FileServer {
     }
     
     public void start() throws IOException {
-        serverSocket = new ServerSocket(port);
-        System.out.println("FileServer started on port " + port);
-        System.out.println("Base directory: " + baseDirectory);
-        
-        Socket clientSocket = serverSocket.accept();
-        System.out.println("New client connected: " + clientSocket.getInetAddress());
-        
-        handleClient(clientSocket);
-        
-        clientSocket.close();
-        serverSocket.close();
+        // Use try-with-resources to ensure ServerSocket and accepted Socket are closed on errors
+        try (ServerSocket ss = new ServerSocket(port)) {
+            serverSocket = ss;
+            System.out.println("FileServer started on port " + port);
+            System.out.println("Base directory: " + baseDirectory);
+
+            // Accept a single client (same behavior as before) but ensure socket is closed
+            try (Socket clientSocket = ss.accept()) {
+                System.out.println("New client connected: " + clientSocket.getInetAddress());
+
+                handleClient(clientSocket);
+            }
+        }
     }
     
     private void handleClient(Socket clientSocket) throws IOException {
-        BufferedReader reader = new BufferedReader(
-            new InputStreamReader(clientSocket.getInputStream())
-        );
-        
-        OutputStream out = clientSocket.getOutputStream();
-        PrintWriter writer = new PrintWriter(new OutputStreamWriter(out), true);
-        
-        String commandString = reader.readLine();
-        
-        if (commandString != null) {
-            try {
-                Protocol.ParsedCommand parsedCommand = Protocol.parseCommand(commandString);
-                System.out.println("Received command: " + commandString);
-                
-                if ("GET".equals(parsedCommand.command)) {
-                    handleGetRequest(parsedCommand.parameter, writer, out);
+        // Use try-with-resources for reader and writer to ensure streams are closed promptly
+        try (
+            BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            PrintWriter writer = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()), true)
+        ) {
+            String commandString = reader.readLine();
+
+            if (commandString != null) {
+                try {
+                    Protocol.ParsedCommand parsedCommand = Protocol.parseCommand(commandString);
+                    System.out.println("Received command: " + commandString);
+
+                    if ("GET".equals(parsedCommand.command)) {
+                        handleGetRequest(parsedCommand.parameter, writer, clientSocket.getOutputStream());
+                    }
+                } catch (Protocol.ProtocolException e) {
+                    System.err.println("Protocol error: " + e.getMessage());
                 }
-            } catch (Protocol.ProtocolException e) {
-                System.err.println("Protocol error: " + e.getMessage());
             }
+        } catch (IOException e) {
+            System.err.println("I/O error handling client: " + e.getMessage());
+            throw e;
         }
     }
     
@@ -80,20 +84,21 @@ public class FileServer {
     }
     
     private void sendFileBytes(File file, OutputStream out) throws IOException {
-        FileInputStream fileInput = new FileInputStream(file);
-        byte[] buffer = new byte[8192];
-        int bytesRead;
-        long totalBytes = 0;
-        
-        while ((bytesRead = fileInput.read(buffer)) != -1) {
-            out.write(buffer, 0, bytesRead);
-            totalBytes += bytesRead;
+        // Ensure FileInputStream is closed on all paths; use a buffered stream for efficiency
+        try (BufferedInputStream fileInput = new BufferedInputStream(new FileInputStream(file))) {
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            long totalBytes = 0;
+
+            while ((bytesRead = fileInput.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+                totalBytes += bytesRead;
+            }
+
+            out.flush();
+
+            System.out.println("File sent: " + file.getName() + " (" + totalBytes + " bytes)");
         }
-        
-        out.flush();
-        fileInput.close();
-        
-        System.out.println("File sent: " + file.getName() + " (" + totalBytes + " bytes)");
     }
     
     public static void main(String[] args) {

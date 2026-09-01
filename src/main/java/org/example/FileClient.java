@@ -12,12 +12,12 @@ public class FileClient {
         this.serverPort = serverPort;
     }
     
-    public void connect(String filename) throws IOException {
+    public void connect(String remoteFilename, String localFilePath) throws IOException {
         Socket socket = new Socket(serverAddress, serverPort);
         System.out.println("Connected to server: " + serverAddress + ":" + serverPort);
         
-        sendRequest(socket, filename);
-        receiveResponse(socket);
+        sendRequest(socket, remoteFilename);
+        receiveResponseAndFile(socket, localFilePath);
         
         socket.close();
     }
@@ -32,7 +32,7 @@ public class FileClient {
         writer.flush();
     }
     
-    private void receiveResponse(Socket socket) throws IOException {
+    private void receiveResponseAndFile(Socket socket, String localFilePath) throws IOException {
         BufferedReader reader = new BufferedReader(
             new InputStreamReader(socket.getInputStream())
         );
@@ -44,9 +44,30 @@ public class FileClient {
             
             if (Protocol.RESPONSE_OK.equals(responseLine)) {
                 System.out.println("Server: File found (OK)");
+                receiveFileBytes(socket, localFilePath);
             } else if (responseLine.startsWith(Protocol.RESPONSE_ERROR)) {
                 System.out.println("Server: " + responseLine);
             }
         }
+    }
+    
+    private void receiveFileBytes(Socket socket, String localFilePath) throws IOException {
+        InputStream in = socket.getInputStream();
+        FileOutputStream fileOut = new FileOutputStream(localFilePath);
+        byte[] buffer = new byte[8192];
+        int bytesRead;
+        long totalBytes = 0;
+        
+        System.out.println("Receiving file bytes...");
+        
+        while ((bytesRead = in.read(buffer)) != -1) {
+            fileOut.write(buffer, 0, bytesRead);
+            totalBytes += bytesRead;
+        }
+        
+        fileOut.flush();
+        fileOut.close();
+        
+        System.out.println("File saved: " + localFilePath + " (" + totalBytes + " bytes)");
     }
 }

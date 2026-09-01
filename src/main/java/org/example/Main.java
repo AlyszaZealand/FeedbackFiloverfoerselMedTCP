@@ -5,11 +5,13 @@ public class Main {
         int serverPort = 5000;
         String serverAddress = "localhost";
         String baseDirectory = "./test-files";
+        String remoteFilename = "test.txt";
+        String localFilePath = "downloaded-test.txt";
         
         java.io.File baseDir = new java.io.File(baseDirectory);
         baseDir.mkdirs();
         
-        createTestFile(baseDirectory, "test.txt", "Hello, this is a test file!");
+        createTestFile(baseDirectory, remoteFilename, "Hello, this is a test file!");
         
         FileServer server = new FileServer(serverPort, baseDirectory);
         
@@ -31,7 +33,7 @@ public class Main {
         FileClient client = new FileClient(serverAddress, serverPort);
         
         try {
-            client.connect("test.txt");
+            client.connect(remoteFilename, localFilePath);
         } catch (java.io.IOException e) {
             System.err.println("Client error: " + e.getMessage());
         }

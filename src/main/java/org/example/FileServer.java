@@ -53,6 +53,13 @@ public class FileServer {
     }
     
     private void handleGetRequest(String filename, PrintWriter writer, OutputStream out) throws IOException {
+        if (isBlockedFile(filename)) {
+            String errorResponse = Protocol.buildErrorResponse("Access denied: file is blocked");
+            writer.println(errorResponse);
+            System.out.println("Sent: " + errorResponse);
+            return;
+        }
+        
         File file = new File(baseDirectory, filename);
         
         if (file.exists() && file.isFile()) {
@@ -66,6 +73,10 @@ public class FileServer {
             writer.println(errorResponse);
             System.out.println("Sent: " + errorResponse);
         }
+    }
+    
+    private boolean isBlockedFile(String filename) {
+        return "hemmelig.txt".equals(filename);
     }
     
     private void sendFileBytes(File file, OutputStream out) throws IOException {
@@ -83,5 +94,36 @@ public class FileServer {
         fileInput.close();
         
         System.out.println("File sent: " + file.getName() + " (" + totalBytes + " bytes)");
+    }
+    
+    public static void main(String[] args) {
+        int port = 5000;
+        String baseDirectory = "./test-files";
+        
+        java.io.File baseDir = new java.io.File(baseDirectory);
+        baseDir.mkdirs();
+        
+//        createTestFile(baseDirectory, "test.txt", "Hello, this is a test file!");
+        
+        FileServer server = new FileServer(port, baseDirectory);
+        
+        try {
+            server.start();
+        } catch (java.io.IOException e) {
+            System.err.println("Server error: " + e.getMessage());
+        }
+    }
+
+    // vi har en test.txt i test-files lavet.
+    private static void createTestFile(String baseDirectory, String filename, String content) {
+        try {
+            java.io.File file = new java.io.File(baseDirectory, filename);
+            java.io.FileWriter writer = new java.io.FileWriter(file);
+            writer.write(content);
+            writer.close();
+            System.out.println("Test file created: " + file.getAbsolutePath());
+        } catch (java.io.IOException e) {
+            System.err.println("Error creating test file: " + e.getMessage());
+        }
     }
 }

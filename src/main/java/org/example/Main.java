@@ -6,7 +6,10 @@ public class Main {
         String serverAddress = "localhost";
         String baseDirectory = "./test-files";
         
-        new java.io.File(baseDirectory).mkdirs();
+        java.io.File baseDir = new java.io.File(baseDirectory);
+        baseDir.mkdirs();
+        
+        createTestFile(baseDirectory, "test.txt", "Hello, this is a test file!");
         
         FileServer server = new FileServer(serverPort, baseDirectory);
         
@@ -31,6 +34,18 @@ public class Main {
             client.connect("test.txt");
         } catch (java.io.IOException e) {
             System.err.println("Client error: " + e.getMessage());
+        }
+    }
+    
+    private static void createTestFile(String baseDirectory, String filename, String content) {
+        try {
+            java.io.File file = new java.io.File(baseDirectory, filename);
+            java.io.FileWriter writer = new java.io.FileWriter(file);
+            writer.write(content);
+            writer.close();
+            System.out.println("Test file created: " + file.getAbsolutePath());
+        } catch (java.io.IOException e) {
+            System.err.println("Error creating test file: " + e.getMessage());
         }
     }
 }

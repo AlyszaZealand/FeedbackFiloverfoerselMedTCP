@@ -44,7 +44,7 @@ public class FileServer {
                 System.out.println("Received command: " + commandString);
                 
                 if ("GET".equals(parsedCommand.command)) {
-                    handleGetRequest(parsedCommand.parameter, writer);
+                    handleGetRequest(parsedCommand.parameter, writer, out);
                 }
             } catch (Protocol.ProtocolException e) {
                 System.err.println("Protocol error: " + e.getMessage());
@@ -52,16 +52,36 @@ public class FileServer {
         }
     }
     
-    private void handleGetRequest(String filename, PrintWriter writer) {
+    private void handleGetRequest(String filename, PrintWriter writer, OutputStream out) throws IOException {
         File file = new File(baseDirectory, filename);
         
-        if (file.exists()) {
+        if (file.exists() && file.isFile()) {
             writer.println(Protocol.buildOkResponse());
+            writer.flush();
             System.out.println("Sent: " + Protocol.buildOkResponse());
+            
+            sendFileBytes(file, out);
         } else {
             String errorResponse = Protocol.buildErrorResponse("File not found: " + filename);
             writer.println(errorResponse);
             System.out.println("Sent: " + errorResponse);
         }
+    }
+    
+    private void sendFileBytes(File file, OutputStream out) throws IOException {
+        FileInputStream fileInput = new FileInputStream(file);
+        byte[] buffer = new byte[8192];
+        int bytesRead;
+        long totalBytes = 0;
+        
+        while ((bytesRead = fileInput.read(buffer)) != -1) {
+            out.write(buffer, 0, bytesRead);
+            totalBytes += bytesRead;
+        }
+        
+        out.flush();
+        fileInput.close();
+        
+        System.out.println("File sent: " + file.getName() + " (" + totalBytes + " bytes)");
     }
 }

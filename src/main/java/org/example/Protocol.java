@@ -33,16 +33,7 @@ public class Protocol {
         
         return new ParsedCommand(command, parameter);
     }
-    
-    public static class ParsedCommand {
-        public final String command;
-        public final String parameter;
-        
-        public ParsedCommand(String command, String parameter) {
-            this.command = command;
-            this.parameter = parameter;
-        }
-    }
+
     
     public static class ProtocolException extends Exception {
         public ProtocolException(String message) {

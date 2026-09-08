@@ -7,7 +7,6 @@ import java.net.Socket;
 public class FileServer {
     private final int port;
     private final String baseDirectory;
-    private ServerSocket serverSocket;
     
     public FileServer(int port, String baseDirectory) {
         this.port = port;
@@ -17,7 +16,6 @@ public class FileServer {
     public void start() throws IOException {
         // Use try-with-resources to ensure ServerSocket and accepted Socket are closed on errors
         try (ServerSocket ss = new ServerSocket(port)) {
-            serverSocket = ss;
             System.out.println("FileServer started on port " + port);
             System.out.println("Base directory: " + baseDirectory);
 
@@ -40,11 +38,11 @@ public class FileServer {
 
             if (commandString != null) {
                 try {
-                    Protocol.ParsedCommand parsedCommand = Protocol.parseCommand(commandString);
+                    ParsedCommand parsedCommand = Protocol.parseCommand(commandString);
                     System.out.println("Received command: " + commandString);
 
-                    if ("GET".equals(parsedCommand.command)) {
-                        handleGetRequest(parsedCommand.parameter, writer, clientSocket.getOutputStream());
+                    if ("GET".equals(parsedCommand.getCommand())) {
+                        handleGetRequest(parsedCommand.getParameter(), writer, clientSocket.getOutputStream());
                     }
                 } catch (Protocol.ProtocolException e) {
                     System.err.println("Protocol error: " + e.getMessage());
@@ -105,10 +103,10 @@ public class FileServer {
         int port = 5000;
         String baseDirectory = "./test-files";
         
-        java.io.File baseDir = new java.io.File(baseDirectory);
+        File baseDir = new File(baseDirectory);
         baseDir.mkdirs();
         
-//        createTestFile(baseDirectory, "test.txt", "Hello, this is a test file!");
+        createTestFile(baseDirectory, "test.txt", "Hello, this is a test file!");
         
         FileServer server = new FileServer(port, baseDirectory);
         

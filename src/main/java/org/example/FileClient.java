@@ -88,11 +88,9 @@ public class FileClient {
             return;
         }
         
-        try {
-            FileOutputStream fileOut = new FileOutputStream(filename);
+        try (FileOutputStream fileOut = new FileOutputStream(filename)){
             fileOut.write(fileBytes);
             fileOut.flush();
-            fileOut.close();
             
             System.out.println("File saved: " + filename);
         } catch (IOException e) {
